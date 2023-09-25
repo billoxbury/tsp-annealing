@@ -4,7 +4,7 @@ Explore landscape and return energies seen at a constant temperature.
 
 make explore
 
-TEMP=10
+TEMP=10.0
 ./bin/explore -f ./data/eire.csv  -o ./data/eire_$TEMP.csv -temp $TEMP -niters 500000
 
 TEMP=0.1
@@ -31,6 +31,7 @@ func main() {
 	var moveclass string
 	var temp float64
 	var poly, niters int
+	var period int
 	var npoints int = 0
 
 	// cmd line arguments
@@ -38,6 +39,7 @@ func main() {
 	flag.StringVar(&outFile, "o", "data.csv", "output file")
 	flag.IntVar(&poly, "poly", 0, "polygon size (option)")
 	flag.IntVar(&niters, "niters", int(1e06), "nr iterations for search")
+	flag.IntVar(&period, "per", int(1e04), "period between checks")
 	flag.Float64Var(&temp, "temp", 1.0, "constant temperature")
 	flag.StringVar(&moveclass, "mc", "reverse", "move class (default: 2-bond chain reversal)")
 	flag.Parse()
@@ -58,6 +60,7 @@ func main() {
 
 	// initialise Metropolis parameters
 	par := annealParam{
+		period:      period,
 		temperature: temp,
 		maxIter:     niters}
 
@@ -100,7 +103,9 @@ func (w tspWalker) explore(filename string) {
 	wrt := bufio.NewWriter(file)
 
 	ct, accept := 0, 0
-	for iter := 0; iter < par.maxIter; iter++ {
+	mean := 0.0
+	sd2 := 0.0
+	for iter := 1; iter < par.maxIter; iter++ {
 
 		i := rand.Intn(npoints)
 		j := rand.Intn(npoints)
@@ -111,8 +116,23 @@ func (w tspWalker) explore(filename string) {
 			energy += delta_d
 			accept++
 		}
+		// update stats
+		mean += energy
+		sd2 += energy * energy
+
 		fmt.Fprintf(wrt, "%v\n", energy)
 		ct++
+
+		// check statistics
+		if iter%par.period == 0 {
+			mean /= float64(par.period)
+			sd2 /= float64(par.period)
+			sd2 -= mean * mean
+			fmt.Printf("Bin (%d): %v +/- %v\n", par.period, mean, math.Sqrt(sd2))
+			mean = 0.0
+			sd2 = 0.0
+		}
+
 	}
 	wrt.Flush()
 	fmt.Printf("Acceptance rate %g\n", float64(accept)/float64(ct))

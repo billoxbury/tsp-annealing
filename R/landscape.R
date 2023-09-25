@@ -8,6 +8,7 @@ library(tseries)
 filename <- "./data/eire_10000.0.csv"
 filename <- "./data/eire_1000.0.csv"
 filename <- "./data/eire_100.0.csv"
+filename <- "./data/eire_10.0.csv"
 
 filename <- "./data/gb_10.0.csv"
 filename <- "./data/gb_1.0.csv"
@@ -70,6 +71,34 @@ mean(dat$energy)
 # ==> burnin = 5e04, lag = 20000, mean energy = 9.6e06
 # T = 100.0 (acceptance ~0.02)
 # ==> burnin, lag off the scale
+
+##################################################
+# stationarity as a criterion for cooling
+
+binsize <- 100
+tolerance <- 1e-06
+
+walk_binned <- walk %>%
+  group_by(bin = floor(time/binsize)) %>%
+  summarise(mu = mean(energy), sigma = sd(energy))
+  
+walk_binned['sigmage'] <- 0
+for(i in 2:nrow(walk_binned)){
+  if(walk_binned$sigma[i-1] < tolerance){
+    walk_binned$sigmage[i] <- 0
+  } else {
+    walk_binned$sigmage[i] <- (walk_binned$mu[i] - walk_binned$mu[i-1])/walk_binned$sigma[i-1]
+  }
+}
+
+ggplot(data = walk_binned,
+       aes(x=bin, y=sigmage)) +
+  geom_line(col='blue')
+
+  
+
+
+
 
 
 
