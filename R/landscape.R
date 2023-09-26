@@ -75,8 +75,8 @@ mean(dat$energy)
 ##################################################
 # stationarity as a criterion for cooling
 
-binsize <- 100
-tolerance <- 1e-06
+binsize <- 10
+tolerance <- 1e-03
 
 walk_binned <- walk %>%
   group_by(bin = floor(time/binsize)) %>%
@@ -91,7 +91,7 @@ for(i in 2:nrow(walk_binned)){
   }
 }
 
-ggplot(data = walk_binned,
+ggplot(data = walk_binned[1:10,],
        aes(x=bin, y=sigmage)) +
   geom_line(col='blue')
 

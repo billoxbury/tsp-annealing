@@ -21,7 +21,7 @@ Rscript ./R/drawRoute.R ./data/gb_cities.csv ./data/route.txt ./img/map.pdf
 
 ./bin/onesearch -dat ./data/eire.csv -v -niters 500000000 -temp 10.0 -cool 0.9999 -per 100000
 
-// With -temp 10.0 -niters 1000000000 (1e09):
+// With -temp 10.0 -niters 1000000000 (1e09) -cool 0.9999 -per 100000 (1e05):
 // Found distance 219027.2245719097 in time 5m7.335534685s
 
 // Initial temp 1000.0 suggested by landscape portrait, but this perfomrs less well.
@@ -42,7 +42,7 @@ func main() {
 
 	// variables
 	var dataFile, outFile string
-	var moveclass string
+	var moveclass, schedule string
 	var temp, cooling float64
 	var period, countdown int
 	var poly, niters int
@@ -59,6 +59,7 @@ func main() {
 	flag.Float64Var(&temp, "temp", 4.0, "initial temperature")
 	flag.Float64Var(&cooling, "cool", 0.9, "cooling factor")
 	flag.StringVar(&moveclass, "mc", "reverse", "move class (default: 2-bond chain reversal)")
+	flag.StringVar(&schedule, "sched", "std", "cooling schedule (default: constant rate)")
 	flag.BoolVar(&verbose, "v", false, "verbose")
 	flag.BoolVar(&pr, "pr", false, "print route")
 	flag.Parse()
@@ -83,7 +84,8 @@ func main() {
 		cooling:     cooling,
 		period:      period,
 		maxIter:     niters,
-		countdown:   countdown}
+		countdown:   countdown,
+		schedule:    schedule}
 
 	// set move class
 	var move func(int, int, []int)

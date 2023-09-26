@@ -11,6 +11,7 @@ type tspProblem struct {
 }
 
 type annealParam struct {
+	schedule    string
 	temperature float64
 	cooling     float64
 	period      int
