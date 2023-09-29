@@ -15,6 +15,8 @@ filename <- "./data/gb_1.0.csv"
 filename <- "./data/gb_0.1.csv"
 filename <- "./data/gb_0.01.csv"
 
+filename <- "./data.csv"
+
 walk <- read_csv(filename,
                  col_names = FALSE,
                  show_col_types = FALSE)
@@ -24,19 +26,19 @@ names(walk) <- c('energy')
 walk['time'] <- 1:nrow(walk)
 
 # plot time series
-n <- 5e05
+n <- 5e04
 dat <- walk[1:n,]
 ggplot(data = dat,
        aes(x=time, y=energy)) +
   geom_line(col='blue')
 
 # autocorrelation
-burnin <- 500000
+burnin <- 100000
 dat <- walk[burnin:(n+burnin),]
 acf(dat$energy, lag.max=2e04)
 
 # MC iid samples
-lag <- 20000
+lag <- 12000
 ( n <- floor((nrow(walk) - burnin)/lag) )
 dat <- walk[burnin + lag*(1:n),]
 
@@ -91,7 +93,7 @@ for(i in 2:nrow(walk_binned)){
   }
 }
 
-ggplot(data = walk_binned[1:10,],
+ggplot(data = walk_binned[1:1000,],
        aes(x=bin, y=sigmage)) +
   geom_line(col='blue')
 

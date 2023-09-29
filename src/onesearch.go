@@ -13,18 +13,32 @@ Run with:
 ./bin/onesearch -poly 1000 -niters 10000000
 // ~1.4s
 
+// 10,000-gon
+
+// Best regime found:
+./bin/onesearch -poly 10000 -temp 1.0 -niters 1000000000 -v -sched sigmage
+// Found distance 6.312087850677634 in time 3m21.880283693s
+
+// I haven't been able to improve on this (i.e. cooling based on sigmage over bins)
+// with standard schedule.
+
+// GB 79 cities
 ./bin/onesearch -dat ./data/gb_cities.csv -pr
 Rscript ./R/drawRoute.R ./data/gb_cities.csv ./data/route.txt ./img/map.pdf
 
+// Eire
 // the Eire data set is much more challenging -  claimed optimal value = 206,171:
 // https://www.math.uwaterloo.ca/tsp/world/eilog.html
 
-./bin/onesearch -dat ./data/eire.csv -v -niters 500000000 -temp 10.0 -cool 0.9999 -per 100000
-
-// With -temp 10.0 -niters 1000000000 (1e09) -cool 0.9999 -per 100000 (1e05):
+./bin/onesearch -dat ./data/eire.csv -v -niters 1000000000 -temp 10.0 -cool 0.9999 -per 100000
 // Found distance 219027.2245719097 in time 5m7.335534685s
 
-// Initial temp 1000.0 suggested by landscape portrait, but this perfomrs less well.
+// with sigmage schedule
+
+./bin/onesearch -dat ./data/eire.csv  -temp 32.0 -cool 0.92 -niters 1000000000 -v -sched sigmage
+// Found distance 229400.87286360632 in time 1m49.208398757s
+
+// Initial temp 1000.0 suggested by landscape portrait, but this performs less well.
 
 (NOTE that the move class _swap_ is dramatically worse then _reverse_ on all problems.)
 

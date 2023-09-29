@@ -4,6 +4,8 @@ Run polygon examples with randomised parameters, collect data set of results.
 
 make makepolydata
 
+./bin/makepolydata -nrun 990 -o data/polydata_sigmage.csv -sched sigmage -maxiter 1000000000
+./bin/makepolydata -nrun 1000 -o data/polydata_std.csv -sched std -maxiter 1000000000
 
 
 */
@@ -11,9 +13,11 @@ make makepolydata
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"math/rand"
+	"os"
 	"time"
 )
 
@@ -25,7 +29,7 @@ func main() {
 	var nruns, niters, minn, maxn int
 
 	// cmd line arguments
-	flag.StringVar(&outFile, "o", "data.csv", "output file")
+	flag.StringVar(&outFile, "o", "data/polydata.csv", "output file")
 	flag.IntVar(&minn, "min", int(100), "min polygon size")
 	flag.IntVar(&maxn, "max", int(5000), "max polygon size")
 	flag.IntVar(&nruns, "nrun", int(100), "nr experiments")
@@ -45,6 +49,12 @@ func main() {
 		move = reverse
 		delta = reverseDelta
 	}
+
+	// open output file
+	file, _ := os.Create(outFile)
+	defer file.Close()
+	wrt := bufio.NewWriter(file)
+	fmt.Fprintf(wrt, "npoints,energy,time,temperature,cooling,period,schedule\n")
 
 	// run experiments
 	for i := 0; i < nruns; i++ {
@@ -67,7 +77,7 @@ func main() {
 		t := time.Since(start).Seconds()
 
 		// report
-		fmt.Printf("%v,%v,%v,%v,%v,%v,%v\n",
+		fmt.Fprintf(wrt, "%v,%v,%v,%v,%v,%v,%v\n",
 			npoints,
 			E,
 			t,
@@ -75,15 +85,15 @@ func main() {
 			par.cooling,
 			par.period,
 			par.schedule)
+		wrt.Flush()
 	}
 }
 
 func makeParam(niters int, schedule string) annealParam {
 
-	var period int
-	temp := 1.0 + 7.0*rand.Float64()
-	cooling := 0.9 + rand.Float64()
-	period := 100 * rand.Intn(100)
+	temp := 1.0 + 3.0*rand.Float64()
+	cooling := 0.8 + 0.2*rand.Float64()
+	period := 20 * (50 + rand.Intn(949))
 
 	par := annealParam{
 		schedule:    schedule,

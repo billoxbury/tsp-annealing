@@ -4,7 +4,7 @@ src = ./src
 tsp = ./tsp
 
 # build all
-all:	runtests onesearch
+all:	runtests onesearch explore makepolydata
 	@ echo 'make complete'
 
 # build targets
@@ -22,5 +22,10 @@ onesearch: $(src)/onesearch.go $(tsp)/*.go
 explore: $(src)/explore.go $(tsp)/*.go
 	mv $(tsp)/main.go .
 	cp $(src)/explore.go $(tsp)/main.go
+	go build -o $(bin)/$@ $(tsp)
+	mv ./main.go $(tsp)
+makepolydata: $(src)/makepolydata.go $(tsp)/*.go
+	mv $(tsp)/main.go .
+	cp $(src)/makepolydata.go $(tsp)/main.go
 	go build -o $(bin)/$@ $(tsp)
 	mv ./main.go $(tsp)

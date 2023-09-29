@@ -136,5 +136,5 @@ func (w tspWalker) explore(filename string) {
 	}
 	wrt.Flush()
 	fmt.Printf("Acceptance rate %g\n", float64(accept)/float64(ct))
-	fmt.Printf("Written %d energy values to %s", ct, filename)
+	fmt.Printf("Written %d energy values to %s\n", ct, filename)
 }

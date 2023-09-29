@@ -16,7 +16,7 @@ func (w tspWalker) run() (float64, []int) {
 
 	is_sigmage := (par.schedule == "sigmage")
 	result_ct, bin_ct := 0, 0
-	sigmage_wait := 4 // waiting time to cool under sigmage schedule
+	sigmage_wait := 2 // waiting time to cool under sigmage schedule
 
 	// to track progress
 	acceptance := 0
@@ -75,7 +75,7 @@ func (w tspWalker) run() (float64, []int) {
 				mean_e /= float64(par.period)
 				sd2_e /= float64(par.period)
 				sd2_e -= mean_e * mean_e
-				if (mean_e-previous_mean)*(mean_e-previous_mean) < previous_sd2 {
+				if (mean_e-previous_mean)*(mean_e-previous_mean) < 2*previous_sd2 {
 					bin_ct++
 				} else {
 					bin_ct = 0
@@ -83,14 +83,14 @@ func (w tspWalker) run() (float64, []int) {
 				if bin_ct >= sigmage_wait {
 					par.temperature *= par.cooling
 				}
+				previous_mean = mean_e
+				previous_sd2 = sd2_e
+				mean_e = 0.0
+				sd2_e = 0.0
 			} else {
 				par.temperature *= par.cooling
 			}
 			// reset variables
-			previous_mean = mean_e
-			previous_sd2 = sd2_e
-			mean_e = 0.0
-			sd2_e = 0.0
 			acceptance = 0
 		}
 	}
