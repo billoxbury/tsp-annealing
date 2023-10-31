@@ -5,15 +5,15 @@ The Travelling Salesman Problem (TSP) as a platform for studying the Metropolis-
 In this directory:
 
     /tsp                library code for tsp set-up and simulated annealing  
+    - interface.go          structs defined: tspProblem, annealParam, tspWalker
     - distance.go
-    - interface.go
-    - main.go               (temp file that gets overwritten by make)
+    - main.go               temp file that gets overwritten by make
     - move.go
     - output.go
     - tspProblem.go
     - tspTests.go
     - tspWalker.go
-    /src                source code for experiments
+    /src                source code for experiments - see comments at top of each file
     - explore.go
     - makepolydata.go
     - onesearch.go

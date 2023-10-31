@@ -1,9 +1,5 @@
 package main
 
-import (
-	"time"
-)
-
 type tspProblem struct {
 	points [][2]float64
 	labels []string
@@ -19,13 +15,13 @@ type annealParam struct {
 	countdown   int
 }
 
-type walker interface {
-	testDelta(float64) int   // nr errors in iterLimit calls
-	timeMove() time.Duration // running time for iterLimit calls
-	timeEnergy() time.Duration
-	timeDelta() time.Duration
-	run() float64
-}
+//type walker interface {
+//	testDelta(float64) int   // nr errors in iterLimit calls
+//	timeMove() time.Duration // running time for iterLimit calls
+//	timeEnergy() time.Duration
+//	timeDelta() time.Duration
+//	run() float64
+//}
 
 type tspWalker struct {
 	problem tspProblem
