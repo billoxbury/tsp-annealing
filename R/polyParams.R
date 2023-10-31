@@ -13,9 +13,23 @@ df_sig <- read_csv(filename,
 
 df <- df_std
   
-df[df$energy == min(df$energy),] %>% View()
+#df[df$energy == min(df$energy),] %>% View()
 
 # histogram of polygon sizes
+ggplot() +
+  geom_histogram(
+    data = df_std,
+    aes(x = npoints, fill = "Std"),
+    #position = "dodge",
+    alpha = 0.5,
+    binwidth = 100) +
+  geom_histogram(
+    data = df_sig,
+    aes(x = npoints, fill = "Sig"),
+    #position = "dodge2",
+    alpha = 0.5,
+    binwidth = 100)
+  
 hist(df$npoints, breaks=20)
 
 # histogram of energies found -
@@ -26,6 +40,29 @@ sum(cond)/nrow(df) # <--- PROPORTION SHOWN
 hist(df$energy[cond], breaks=30)
 rug(2*pi, col='red', lwd=10)
 rug(4*pi, col='orange', lwd=10)
+
+ggplot() + 
+  geom_histogram(
+    data = (df_std %>% filter(energy < 15)),
+    aes(x= energy, fill = "Std"),
+    alpha = 0.7) +
+  geom_histogram(
+    data = (df_sig %>% filter(energy < 15)),
+    aes(x= energy, fill = "Sig"),
+    alpha = 0.7) + 
+  geom_rug(aes(x = 2*pi),
+           col = "red",
+           lwd = 2) +
+  geom_rug(aes(x = 4*pi),
+           col = "orange",
+           lwd = 2)
+
+
+sum( df_std$energy == min(df_std$energy) )
+sum( df_sig$energy == min(df_sig$energy) )
+sum( df_std$energy < 8.0 )
+sum( df_sig$energy < 8.0 )
+
 
 # running time against final energy
 plot(df$time, df$energy, 
