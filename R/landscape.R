@@ -15,8 +15,6 @@ filename <- "./data/gb_1.0.csv"
 filename <- "./data/gb_0.1.csv"
 filename <- "./data/gb_0.01.csv"
 
-filename <- "./data.csv"
-
 walk <- read_csv(filename,
                  col_names = FALSE,
                  show_col_types = FALSE)

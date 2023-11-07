@@ -7,7 +7,6 @@ In this directory:
     /tsp                library code for tsp set-up and simulated annealing  
     - interface.go          structs defined: tspProblem, annealParam, tspWalker
     - distance.go
-    - main.go               temp file that gets overwritten by make
     - move.go
     - output.go
     - tspProblem.go
@@ -29,7 +28,7 @@ In this directory:
                             1. put sequence of .png or .pdf files here
                             2. run 
                             > convert -delay 75  -resize '100%' -density 288x288 ./*.pdf map.gif
-    Makefile            run make to control building of Go source code
-    README.md           this README
+    Makefile            run make to control building of binaries
+    README.md           
     go.mod
     .gitignore

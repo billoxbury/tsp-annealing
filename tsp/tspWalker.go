@@ -8,6 +8,7 @@ import (
 )
 
 // Metropolis algorithm - returns best energy and best state
+
 func (w tspWalker) run() (float64, []int) {
 
 	prob := w.problem
@@ -99,4 +100,70 @@ func (w tspWalker) run() (float64, []int) {
 	fmt.Printf("Found distance %v in time %v\n", distance, runtime)
 
 	return distance, best_p
+}
+
+/*************************************************************************************/
+
+// walker 'explore' routine
+
+// each walker will send back packets as follows
+type packet struct {
+	id          int
+	temperature float64
+	energy      []float64
+}
+
+func (w tspWalker) explore(numJobs int, srate int, results chan<- packet) {
+
+	prob := w.problem
+	par := w.param
+	npoints := len(prob.points)
+	energy := travelDist(w.state, prob.dist)
+
+	// variables to report
+	var res packet
+
+	ct := 0
+	for job := 0; job < numJobs; job++ {
+
+		var energies []float64
+		// burn-in
+		for iter := 0; iter < par.period; iter++ {
+			i := rand.Intn(npoints)
+			j := rand.Intn(npoints)
+			delta_d := w.delta(i, j, w.state, prob.dist)
+			if delta_d < 0 || rand.Float64() < math.Exp(-delta_d/par.temperature) {
+				// accept move
+				w.move(i, j, w.state)
+				energy += delta_d
+			}
+		}
+
+		// record energies
+		for iter := 0; iter < par.period; iter++ {
+			i := rand.Intn(npoints)
+			j := rand.Intn(npoints)
+			delta_d := w.delta(i, j, w.state, prob.dist)
+			if delta_d < 0 || rand.Float64() < math.Exp(-delta_d/par.temperature) {
+				// accept move
+				w.move(i, j, w.state)
+				energy += delta_d
+			}
+			if iter%srate == 0 {
+				energies = append(energies, energy)
+			}
+		}
+
+		// return results
+		res.id = w.id
+		res.temperature = par.temperature
+		res.energy = energies
+		ct += len(energies)
+		results <- res
+
+		// cool
+		par.temperature *= par.cooling
+
+	}
+	fmt.Printf("%d: written %d energy values to output channel\n", w.id, ct)
 }

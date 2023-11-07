@@ -24,6 +24,7 @@ type annealParam struct {
 //}
 
 type tspWalker struct {
+	id      int
 	problem tspProblem
 	param   annealParam
 	state   []int

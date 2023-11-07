@@ -4,10 +4,8 @@ Explore landscape and return energies seen at a constant temperature.
 
 make explore
 
-TEMP=10.0
-./bin/explore -f ./data/eire.csv  -o ./data/eire_$TEMP.csv -temp $TEMP -niters 500000
 
-TEMP=0.1
+TEMP=1.0
 ./bin/explore -f ./data/gb_cities.csv  -o ./data/gb_$TEMP.csv -temp $TEMP -niters 500000
 
 
@@ -19,9 +17,9 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"math"
 	"math/rand"
 	"os"
+	"sync"
 )
 
 func main() {
@@ -29,9 +27,9 @@ func main() {
 	// variables
 	var dataFile, outFile string
 	var moveclass string
-	var temp float64
-	var poly, niters int
-	var period int
+	var temp, cooling float64
+	var poly, niters, numWalkers, numJobs int
+	var period, srate int
 	var npoints int = 0
 
 	// cmd line arguments
@@ -39,8 +37,12 @@ func main() {
 	flag.StringVar(&outFile, "o", "data.csv", "output file")
 	flag.IntVar(&poly, "poly", 0, "polygon size (option)")
 	flag.IntVar(&niters, "niters", int(1e06), "nr iterations for search")
-	flag.IntVar(&period, "per", int(1e04), "period between checks")
-	flag.Float64Var(&temp, "temp", 1.0, "constant temperature")
+	flag.IntVar(&numWalkers, "nw", 2, "nr walkers")
+	flag.IntVar(&numJobs, "nj", 1, "nr jobs per walker")
+	flag.IntVar(&period, "per", int(1e04), "period before cooling")
+	flag.IntVar(&srate, "srate", 100, "sampling rate")
+	flag.Float64Var(&temp, "temp", 1.0, "initial temperature")
+	flag.Float64Var(&cooling, "cool", 0.9, "cooling factor")
 	flag.StringVar(&moveclass, "mc", "reverse", "move class (default: 2-bond chain reversal)")
 	flag.Parse()
 
@@ -61,6 +63,7 @@ func main() {
 	// initialise Metropolis parameters
 	par := annealParam{
 		period:      period,
+		cooling:     cooling,
 		temperature: temp,
 		maxIter:     niters}
 
@@ -76,65 +79,45 @@ func main() {
 		delta = reverseDelta
 	}
 
-	// initialise walker
-	w := tspWalker{
-		problem: prob,
-		param:   par,
-		state:   rand.Perm(npoints),
-		move:    move,
-		delta:   delta}
+	// channel for walkers to report on
+	results := make(chan packet, numWalkers*numJobs)
 
-	// run explore
-	w.explore(outFile)
-
-	// report
-	fmt.Printf("")
-}
-
-func (w tspWalker) explore(filename string) {
-
-	prob := w.problem
-	par := w.param
-	npoints := len(prob.points)
-	energy := travelDist(w.state, prob.dist)
-
-	file, _ := os.Create(filename)
+	// open file for writing results
+	file, _ := os.Create(outFile)
 	defer file.Close()
 	wrt := bufio.NewWriter(file)
 
-	ct, accept := 0, 0
-	mean := 0.0
-	sd2 := 0.0
-	for iter := 1; iter < par.maxIter; iter++ {
-
-		i := rand.Intn(npoints)
-		j := rand.Intn(npoints)
-		delta_d := w.delta(i, j, w.state, prob.dist)
-		if delta_d < 0 || rand.Float64() < math.Exp(-delta_d/par.temperature) {
-			// accept move
-			w.move(i, j, w.state)
-			energy += delta_d
-			accept++
-		}
-		// update stats
-		mean += energy
-		sd2 += energy * energy
-
-		fmt.Fprintf(wrt, "%v\n", energy)
-		ct++
-
-		// check statistics
-		if iter%par.period == 0 {
-			mean /= float64(par.period)
-			sd2 /= float64(par.period)
-			sd2 -= mean * mean
-			fmt.Printf("Bin (%d): %v +/- %v\n", par.period, mean, math.Sqrt(sd2))
-			mean = 0.0
-			sd2 = 0.0
-		}
-
+	// run walkers
+	var wg sync.WaitGroup
+	for i := 0; i < numWalkers; i++ {
+		wg.Add(1)
+		w := tspWalker{
+			id:      i,
+			problem: prob,
+			param:   par,
+			state:   rand.Perm(npoints),
+			move:    move,
+			delta:   delta}
+		go func() {
+			defer wg.Done()
+			w.explore(numJobs, srate, results)
+		}()
 	}
+	// collect and report results
+	fmt.Fprintf(wrt, "walker,temperature,energy\n")
+	ct := 0
+	for i := 0; i < numWalkers*numJobs; i++ {
+
+		res := <-results
+		ct += len(res.energy)
+
+		for _, e := range res.energy {
+			fmt.Fprintf(wrt, "%d,%v,%v\n", res.id, res.temperature, e)
+		}
+	}
+	wg.Wait()
 	wrt.Flush()
-	fmt.Printf("Acceptance rate %g\n", float64(accept)/float64(ct))
-	fmt.Printf("Written %d energy values to %s\n", ct, filename)
+
+	// report
+	fmt.Printf("Written %d energy values to %s\n", ct, outFile)
 }
