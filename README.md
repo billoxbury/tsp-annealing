@@ -15,12 +15,13 @@ In this directory:
     /src                source code for experiments - see comments at top of each file
     - explore.go
     - makepolydata.go
-    - onesearch.go
+    - search.go
     - runtests.go
     /bin                binaries for experiments (one for each file in /src)
     /R                  R scripts
     - drawRoute.R
     - landscape.R
+    - assessConvergence.R
     - polyParams.R
     /data               data sets
     /img                images (output by R scripts)
