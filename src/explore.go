@@ -1,8 +1,16 @@
 /*
 
-Explore landscape and return energies seen at a constant temperature.
+Reads TSP problem, sets up annealing parameters, dispatches parallel walkers as go routines.
+Each walker send periodic data packets back to the search client, which writes a diagnostic file,
+tracks the best solution found and writes that to a best-route file.
+
+./onesearch is faster but without diagnostic functionality or parallelism.
+
+To build:
 
 make explore
+
+To run e.g.:
 
 TEMP=1.0
 ./bin/explore -f ./data/gb_cities.csv  \
@@ -16,6 +24,17 @@ TEMP=1.0
 	-pr
 
 Rscript ./R/drawRoute.R ./data/gb_cities.csv ./data/route.txt ./img/map.pdf
+
+EXAMPLES:
+./bin/explore -poly 10 -per 10 -nw 1 -pr
+// 1.2ms
+./bin/explore -poly 100 -nj 50 -per 50 -pr
+// 130ms
+./bin/explore -poly 1000 -nj 1000
+// 7s
+
+// 10,000-gon
+./bin/explore -poly 10000 -temp 1.0 -nj -nw 8 1000 -v
 
 
 */
@@ -37,7 +56,7 @@ func main() {
 	var dataFile, diagFile, routeFile string
 	var moveclass string
 	var temp, cooling float64
-	var poly, niters, numWalkers, numJobs int
+	var poly, numWalkers, numJobs int
 	var period, burnin, srate int
 	var npoints int = 0
 	var verbose, pr bool
@@ -47,7 +66,6 @@ func main() {
 	flag.StringVar(&diagFile, "d", "./data/data.csv", "diagnostics file")
 	flag.StringVar(&routeFile, "r", "./data/route.txt", "output route file")
 	flag.IntVar(&poly, "poly", 0, "polygon size (option)")
-	flag.IntVar(&niters, "niters", int(1e06), "nr iterations for search")
 	flag.IntVar(&numWalkers, "nw", 2, "nr walkers")
 	flag.IntVar(&numJobs, "nj", 1, "nr jobs per walker")
 	flag.IntVar(&period, "per", int(1e04), "period before cooling")
@@ -80,8 +98,7 @@ func main() {
 		burnin:      burnin,
 		srate:       srate,
 		cooling:     cooling,
-		temperature: temp,
-		maxIter:     niters}
+		temperature: temp}
 
 	// set move class
 	var move func(int, int, []int)
@@ -123,7 +140,7 @@ func main() {
 
 		go func() {
 			defer wg.Done()
-			w.search(numJobs, results)
+			w.explore(numJobs, results)
 		}()
 	}
 	// collect and report results

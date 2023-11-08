@@ -73,7 +73,7 @@ func main() {
 			delta:   delta}
 
 		start := time.Now()
-		E, _ := wkr.run()
+		E, _ := wkr.search()
 		t := time.Since(start).Seconds()
 
 		// report

@@ -7,9 +7,18 @@ import (
 	"time"
 )
 
-// Metropolis search - returns best energy and best state
+/*
+Metropolis search - returns best energy and best state.
 
-func (w tspWalker) run() (float64, []int) {
+- pluggable cooling schedule
+- stopping criterion by repetition countdown for best energy
+- fast er than explore() with no data collection
+
+TO DO:
+
+- run parallel walkers as go routines
+*/
+func (w tspWalker) search() (float64, []int) {
 
 	prob := w.problem
 	par := w.param
@@ -103,8 +112,17 @@ func (w tspWalker) run() (float64, []int) {
 }
 
 /*************************************************************************************/
+/*
+Explore routine:
 
-func (w tspWalker) search(numJobs int, results chan<- packet) {
+- flat cooling schedule only
+- specified number of constant-temperature periods
+- burn-in before data collection in each period
+- data collection and piping to client
+- parallel walkers via go routines
+
+*/
+func (w tspWalker) explore(numJobs int, results chan<- packet) {
 
 	// set-up
 	prob := w.problem
@@ -205,7 +223,8 @@ func (w tspWalker) search(numJobs int, results chan<- packet) {
 
 		// verbose output
 		if w.verbose {
-			fmt.Printf("%6d: temperature %v, acceptance %v best dist %v\n",
+			fmt.Printf("%2d - %6d: temperature %v, acceptance %v best dist %v\n",
+				w.id,
 				job,
 				par.temperature,
 				float64(acceptance)/float64(par.period),
@@ -254,63 +273,4 @@ func (w tspWalker) search(numJobs int, results chan<- packet) {
 	distance := travelDist(best_s, prob.dist)
 	//fmt.Printf("%d: written %d records to output channel\n", w.id, ct)
 	fmt.Printf("%d: found distance %v in time %v\n", w.id, distance, runtime)
-}
-
-/*************************************************************************************/
-
-// walker 'explore' routine
-
-func (w tspWalker) explore(numJobs int, results chan<- packet) {
-
-	prob := w.problem
-	par := w.param
-	npoints := len(prob.points)
-	energy := travelDist(w.state, prob.dist)
-
-	// variables to report
-	var res packet
-
-	ct := 0
-	for job := 0; job < numJobs; job++ {
-
-		var energies []float64
-		// burn-in
-		for iter := 0; iter < par.burnin; iter++ {
-			i := rand.Intn(npoints)
-			j := rand.Intn(npoints)
-			delta_d := w.delta(i, j, w.state, prob.dist)
-			if delta_d < 0 || rand.Float64() < math.Exp(-delta_d/par.temperature) {
-				// accept move
-				w.move(i, j, w.state)
-				energy += delta_d
-			}
-		}
-
-		// record energies
-		for iter := 0; iter < par.period; iter++ {
-			i := rand.Intn(npoints)
-			j := rand.Intn(npoints)
-			delta_d := w.delta(i, j, w.state, prob.dist)
-			if delta_d < 0 || rand.Float64() < math.Exp(-delta_d/par.temperature) {
-				// accept move
-				w.move(i, j, w.state)
-				energy += delta_d
-			}
-			if iter%par.srate == 0 {
-				energies = append(energies, energy)
-			}
-		}
-
-		// return results
-		res.id = w.id
-		res.temperature = par.temperature
-		res.energy = energies
-		ct += len(energies)
-		results <- res
-
-		// cool
-		par.temperature *= par.cooling
-
-	}
-	fmt.Printf("%d: written %d energy values to output channel\n", w.id, ct)
 }
