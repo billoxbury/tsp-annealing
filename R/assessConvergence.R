@@ -4,7 +4,8 @@ library(dplyr)
 library(ggplot2)
 
 # read data 
-filename <- "./data/gb_1.0.csv"
+#filename <- "./data/gb_1.0.csv"
+filename <- "./data/10k-gon-T0pt1.csv"
 df <- read_csv(filename,
                  show_col_types = FALSE)
 df['walker'] <- factor(df$walker)
@@ -59,7 +60,7 @@ for(T in temp_set){
 
 # plot the F-value with cooling
 plot(temp_set, fvalue, 
-     xlim = c(1,0),
+     xlim = c(0.1,0),
      col='blue', 'b',
      xlab = 'Temperature',
      ylab = 'F-value')

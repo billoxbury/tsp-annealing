@@ -16,7 +16,6 @@ TEMP=1.0
 ./bin/explore -f ./data/gb_cities.csv  \
 	-d ./data/gb_$TEMP.csv \
 	-temp $TEMP \
-	-per 10000 \
 	-nw 10 \
 	-cool 0.97 \
 	-srate 100 \
@@ -34,7 +33,7 @@ EXAMPLES:
 // 1.8s
 
 // 10,000-gon
-./bin/explore -poly 10000 -temp 1.0 -nw 8 -nj 1000 -v
+./bin/explore -poly 10000 -temp 1.0 -per 20000 -nw 8 -nj 100 -v -d 10k-gon-T1.csv
 
 
 */
@@ -67,8 +66,8 @@ func main() {
 	flag.StringVar(&routeFile, "r", "./data/route.txt", "output route file")
 	flag.IntVar(&poly, "poly", 0, "polygon size (option)")
 	flag.IntVar(&numWalkers, "nw", 2, "nr walkers")
-	flag.IntVar(&numJobs, "nj", 1, "nr jobs per walker")
-	flag.IntVar(&period, "per", int(1e04), "period before cooling")
+	flag.IntVar(&numJobs, "nj", 10, "nr jobs per walker")
+	flag.IntVar(&period, "per", int(2e04), "period before cooling")
 	flag.IntVar(&srate, "srate", 100, "sampling rate")
 	flag.Float64Var(&temp, "temp", 1.0, "initial temperature")
 	flag.Float64Var(&cooling, "cool", 0.9, "cooling factor")
