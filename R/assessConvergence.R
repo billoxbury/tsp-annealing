@@ -15,7 +15,17 @@ n <- length(temp_set)
 m <- 10
 temp_subset <- temp_set[seq(1,n,ceiling(n/m))]
 
-df %>% 
+# period (after sampling)
+period <- 1 + max(df['iteration'])
+
+# partition to burn-in and mature data frames
+df_burnin <- df %>%
+  filter( iteration < period/2 )
+df_mature <- df %>%
+  filter( iteration > period/2 )
+
+# boxplot comparison of walkers conditioned on temperature
+df_mature %>% 
   filter(temperature %in% temp_subset) %>%
   ggplot(aes(group=walker, energy)) +
   geom_boxplot() +
@@ -37,7 +47,7 @@ fv <- function(aov_output){
 fvalue <- c()
 for(T in temp_set){
   
-  tmp <- df[df$temperature == T,]
+  tmp <- df_mature[df_mature$temperature == T,]
   mod <- aov(energy ~ walker, tmp)
   v <- fv(mod)
   fvalue <- c(fvalue, v[1])

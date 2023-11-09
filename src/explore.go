@@ -4,7 +4,7 @@ Reads TSP problem, sets up annealing parameters, dispatches parallel walkers as 
 Each walker send periodic data packets back to the search client, which writes a diagnostic file,
 tracks the best solution found and writes that to a best-route file.
 
-./onesearch is faster but without diagnostic functionality or parallelism.
+./bin/search is faster but without diagnostic functionality.
 
 To build:
 
@@ -26,15 +26,15 @@ TEMP=1.0
 Rscript ./R/drawRoute.R ./data/gb_cities.csv ./data/route.txt ./img/map.pdf
 
 EXAMPLES:
-./bin/explore -poly 10 -per 10 -nw 1 -pr
-// 1.2ms
-./bin/explore -poly 100 -nj 50 -per 50 -pr
-// 130ms
-./bin/explore -poly 1000 -nj 1000
-// 7s
+./bin/explore -poly 10 -per 10 -nj 20 -nw 1 -pr
+// 0.06 ms
+./bin/explore -poly 100 -nj 100 -per 500 -pr
+// 13ms
+./bin/explore -poly 1000 -nj 500
+// 1.8s
 
 // 10,000-gon
-./bin/explore -poly 10000 -temp 1.0 -nj -nw 8 1000 -v
+./bin/explore -poly 10000 -temp 1.0 -nw 8 -nj 1000 -v
 
 
 */
@@ -57,7 +57,7 @@ func main() {
 	var moveclass string
 	var temp, cooling float64
 	var poly, numWalkers, numJobs int
-	var period, burnin, srate int
+	var period, srate int
 	var npoints int = 0
 	var verbose, pr bool
 
@@ -69,7 +69,6 @@ func main() {
 	flag.IntVar(&numWalkers, "nw", 2, "nr walkers")
 	flag.IntVar(&numJobs, "nj", 1, "nr jobs per walker")
 	flag.IntVar(&period, "per", int(1e04), "period before cooling")
-	flag.IntVar(&burnin, "burnin", int(1e04), "burn-in period at each temperature")
 	flag.IntVar(&srate, "srate", 100, "sampling rate")
 	flag.Float64Var(&temp, "temp", 1.0, "initial temperature")
 	flag.Float64Var(&cooling, "cool", 0.9, "cooling factor")
@@ -95,7 +94,6 @@ func main() {
 	// initialise Metropolis parameters
 	par := annealParam{
 		period:      period,
-		burnin:      burnin,
 		srate:       srate,
 		cooling:     cooling,
 		temperature: temp}
@@ -124,7 +122,7 @@ func main() {
 	var wg sync.WaitGroup
 	best_s := make([]int, npoints)
 	var best_e float64
-	best_e = 1000000.0
+	best_e = float64(1 << 32)
 
 	for i := 0; i < numWalkers; i++ {
 
@@ -144,7 +142,7 @@ func main() {
 		}()
 	}
 	// collect and report results
-	fmt.Fprintf(wrt, "walker,temperature,energy\n")
+	fmt.Fprintf(wrt, "walker,temperature,iteration,energy\n")
 	ct := 0
 	for i := 0; i < numWalkers*numJobs; i++ {
 
@@ -158,8 +156,8 @@ func main() {
 		}
 
 		// write diagnostics
-		for _, e := range res.energy {
-			fmt.Fprintf(wrt, "%d,%v,%v\n", res.id, res.temperature, e)
+		for iter, e := range res.energy {
+			fmt.Fprintf(wrt, "%d,%v,%d,%v\n", res.id, res.temperature, iter, e)
 		}
 	}
 	wg.Wait()

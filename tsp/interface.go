@@ -13,7 +13,6 @@ type annealParam struct {
 	temperature float64
 	cooling     float64
 	period      int
-	burnin      int
 	srate       int
 	maxIter     int
 	countdown   int

@@ -50,6 +50,7 @@ import (
 	"flag"
 	"fmt"
 	"math/rand"
+	"sync"
 )
 
 func main() {
@@ -59,7 +60,7 @@ func main() {
 	var moveclass, schedule string
 	var temp, cooling float64
 	var period, countdown int
-	var poly, niters int
+	var poly, nwalkers, niters int
 	var npoints int = 0
 	var verbose, pr bool
 
@@ -67,6 +68,7 @@ func main() {
 	flag.StringVar(&dataFile, "dat", "", "cities file (CSV)")
 	flag.StringVar(&outFile, "out", "route.txt", "output file")
 	flag.IntVar(&poly, "poly", 0, "polygon size (option)")
+	flag.IntVar(&nwalkers, "nw", 1, "nr walkers")
 	flag.IntVar(&period, "per", int(1e04), "period at each temparature")
 	flag.IntVar(&countdown, "cd", 400, "countdown for acceptance condition")
 	flag.IntVar(&niters, "niters", int(1e06), "max iterations for search")
@@ -113,21 +115,46 @@ func main() {
 		delta = reverseDelta
 	}
 
-	// initialise walker
-	w := tspWalker{
-		problem: prob,
-		param:   par,
-		state:   rand.Perm(npoints),
-		move:    move,
-		delta:   delta,
-		verbose: verbose}
+	// channel for walkers to report on
+	results := make(chan packet, nwalkers)
 
-	// run search
-	_, state := w.search()
+	// run walkers
+	var wg sync.WaitGroup
+	for i := 0; i < nwalkers; i++ {
 
-	// return results
-	if pr {
-		printRoute(state, prob.labels)
+		wg.Add(1)
+		w := tspWalker{
+			problem: prob,
+			param:   par,
+			state:   rand.Perm(npoints),
+			move:    move,
+			delta:   delta,
+			verbose: verbose}
+
+		go func() {
+			defer wg.Done()
+			w.search(results)
+		}()
 	}
-	writePerm(state, "./data/"+outFile)
+
+	// collect results
+	best_s := make([]int, npoints)
+	best_e := float64(1 << 32)
+
+	for i := 0; i < nwalkers; i++ {
+		res := <-results
+		if res.best_e < best_e {
+			best_e = res.best_e
+			copy(best_s, res.best_s)
+		}
+	}
+	wg.Wait()
+
+	// report results
+	if pr {
+		printRoute(best_s, prob.labels)
+	}
+	writePerm(best_s, "./data/"+outFile)
+	fmt.Printf("Best distance found: %v\n", best_e)
+	fmt.Printf("Best route written to %s\n", "./data/"+outFile)
 }
